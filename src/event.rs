@@ -373,6 +373,8 @@ impl Clone for WindowEvent<'static> {
                 is_synthetic: *is_synthetic,
             },
 
+            ModifiersChanged(modifiers_state) => ModifiersChanged(*modifiers_state),
+
             #[allow(deprecated)]
             CursorMoved {
                 device_id,
