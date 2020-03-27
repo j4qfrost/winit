@@ -79,7 +79,9 @@ impl Drop for AnimationFrameRequest {
     fn drop(&mut self) {
         if !(*self.fired).get() {
             let window = web_sys::window().expect("Failed to obtain window");
-            window.cancel_animation_frame(self.handle);
+            window
+                .cancel_animation_frame(self.handle)
+                .expect("Failed to cancel animation frame");
         }
     }
 }
