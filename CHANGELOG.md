@@ -4,6 +4,7 @@
 - Added `Clone` implementation for `'static` events.
 - On Web, replaced zero timeout for `ControlFlow::Poll` with `requestAnimationFrame`
 - On Web, fix a possible panic during event handling
+- On Windows, drag and drop is now optional and must be enabled with `WindowBuilderExtWindows::with_drag_and_drop(true)`.
 
 # 0.22.0 (2020-03-09)
 
