@@ -1,6 +1,7 @@
 # Unreleased
 
 - On X11, fix `ResumeTimeReached` being fired too early.
+- On Windows, drag and drop is now optional and must be enabled with `WindowBuilderExtWindows::with_drag_and_drop(true)`.
 
 # 0.22.0 (2020-03-09)
 
