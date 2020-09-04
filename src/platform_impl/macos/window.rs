@@ -19,6 +19,7 @@ use crate::{
     platform::macos::{ActivationPolicy, RequestUserAttentionType, WindowExtMacOS},
     platform_impl::platform::{
         app_state::AppState,
+        app_state::INTERRUPT_EVENT_LOOP_EXIT,
         ffi,
         monitor::{self, MonitorHandle, VideoMode},
         util::{self, IdRef},
@@ -59,7 +60,7 @@ pub fn get_window_id(window_cocoa_id: id) -> Id {
     Id(window_cocoa_id as *const Object as _)
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct PlatformSpecificWindowBuilderAttributes {
     pub activation_policy: ActivationPolicy,
     pub movable_by_window_background: bool,
@@ -70,6 +71,25 @@ pub struct PlatformSpecificWindowBuilderAttributes {
     pub fullsize_content_view: bool,
     pub resize_increments: Option<LogicalSize<f64>>,
     pub disallow_hidpi: bool,
+    pub has_shadow: bool,
+}
+
+impl Default for PlatformSpecificWindowBuilderAttributes {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            activation_policy: Default::default(),
+            movable_by_window_background: false,
+            titlebar_transparent: false,
+            title_hidden: false,
+            titlebar_hidden: false,
+            titlebar_buttons_hidden: false,
+            fullsize_content_view: false,
+            resize_increments: None,
+            disallow_hidpi: false,
+            has_shadow: true,
+        }
+    }
 }
 
 fn create_app(activation_policy: ActivationPolicy) -> Option<id> {
@@ -221,6 +241,10 @@ fn create_window(
                     let size = NSSize::new(x as CGFloat, y as CGFloat);
                     ns_window.setResizeIncrements_(size);
                 }
+            }
+
+            if !pl_attrs.has_shadow {
+                ns_window.setHasShadow_(NO);
             }
 
             ns_window.center();
@@ -820,6 +844,8 @@ impl UnownedWindow {
         shared_state_lock.fullscreen = fullscreen.clone();
         trace!("Unlocked shared state in `set_fullscreen`");
 
+        INTERRUPT_EVENT_LOOP_EXIT.store(true, Ordering::SeqCst);
+
         match (&old_fullscreen, &fullscreen) {
             (&None, &Some(_)) => unsafe {
                 util::toggle_full_screen_async(
@@ -865,7 +891,7 @@ impl UnownedWindow {
             ) => unsafe {
                 util::restore_display_mode_async(video_mode.monitor().inner.native_identifier());
             },
-            _ => (),
+            _ => INTERRUPT_EVENT_LOOP_EXIT.store(false, Ordering::SeqCst),
         }
     }
 
@@ -1089,6 +1115,19 @@ impl WindowExtMacOS for UnownedWindow {
 
                 true
             }
+        }
+    }
+
+    #[inline]
+    fn has_shadow(&self) -> bool {
+        unsafe { self.ns_window.hasShadow() == YES }
+    }
+
+    #[inline]
+    fn set_has_shadow(&self, has_shadow: bool) {
+        unsafe {
+            self.ns_window
+                .setHasShadow_(if has_shadow { YES } else { NO })
         }
     }
 }

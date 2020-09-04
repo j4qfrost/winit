@@ -37,7 +37,7 @@ use instant::Instant;
 use std::path::PathBuf;
 
 use crate::{
-    dpi::{LogicalPosition, PhysicalPosition, PhysicalSize},
+    dpi::{PhysicalPosition, PhysicalSize},
     platform_impl,
     window::{Theme, WindowId},
 };
@@ -81,10 +81,11 @@ pub enum Event<'a, T: 'static> {
     ///
     /// This event is useful as a place to put your code that should be run after all
     /// state-changing events have been handled and you want to do stuff (updating state, performing
-    /// calculations, etc) that happens as the "main body" of your event loop. If your program draws
-    /// graphics, it's usually better to do it in response to
+    /// calculations, etc) that happens as the "main body" of your event loop. If your program only draws
+    /// graphics when something changes, it's usually better to do it in response to
     /// [`Event::RedrawRequested`](crate::event::Event::RedrawRequested), which gets emitted
-    /// immediately after this event.
+    /// immediately after this event. Programs that draw graphics continuously, like most games,
+    /// can render here unconditionally for simplicity.
     MainEventsCleared,
 
     /// Emitted after `MainEventsCleared` when a window should be redrawn.
@@ -97,6 +98,9 @@ pub enum Event<'a, T: 'static> {
     ///
     /// During each iteration of the event loop, Winit will aggregate duplicate redraw requests
     /// into a single event, to help avoid duplicating rendering work.
+    ///
+    /// Mainly of interest to applications with mostly-static graphics that avoid redrawing unless
+    /// something changes, like most non-game GUIs.
     RedrawRequested(WindowId),
 
     /// Emitted after all `RedrawRequested` events have been processed and control flow is about to
@@ -372,9 +376,7 @@ impl Clone for WindowEvent<'static> {
                 input: *input,
                 is_synthetic: *is_synthetic,
             },
-
-            ModifiersChanged(modifiers_state) => ModifiersChanged(*modifiers_state),
-
+            ModifiersChanged(modifiers) => ModifiersChanged(modifiers.clone()),
             #[allow(deprecated)]
             CursorMoved {
                 device_id,
@@ -761,7 +763,7 @@ pub enum MouseScrollDelta {
     /// Scroll events are expressed as a PixelDelta if
     /// supported by the device (eg. a touchpad) and
     /// platform.
-    PixelDelta(LogicalPosition<f64>),
+    PixelDelta(PhysicalPosition<f64>),
 }
 
 /// Symbolic name for a keyboard key.
@@ -889,6 +891,10 @@ pub enum VirtualKeyCode {
     Numpad7,
     Numpad8,
     Numpad9,
+    NumpadComma,
+    NumpadEnter,
+    NumpadEquals,
+    NumpadSubtract,
 
     AbntC1,
     AbntC2,
@@ -927,9 +933,6 @@ pub enum VirtualKeyCode {
     NavigateBackward,
     NextTrack,
     NoConvert,
-    NumpadComma,
-    NumpadEnter,
-    NumpadEquals,
     OEM102,
     Period,
     PlayPause,
@@ -944,7 +947,6 @@ pub enum VirtualKeyCode {
     Slash,
     Sleep,
     Stop,
-    Subtract,
     Sysrq,
     Tab,
     Underline,

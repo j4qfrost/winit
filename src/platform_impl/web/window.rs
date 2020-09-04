@@ -165,20 +165,17 @@ impl Window {
             CursorIcon::RowResize => "row-resize",
         };
         *self.previous_pointer.borrow_mut() = text;
-        self.canvas
-            .set_attribute("style", &format!("cursor: {}", text));
+        backend::set_canvas_style_property(self.canvas.raw(), "cursor", text);
     }
 
     #[inline]
     pub fn set_cursor_position(&self, _position: Position) -> Result<(), ExternalError> {
-        // Intentionally a no-op, as the web does not support setting cursor positions
-        Ok(())
+        Err(ExternalError::NotSupported(NotSupportedError::new()))
     }
 
     #[inline]
     pub fn set_cursor_grab(&self, _grab: bool) -> Result<(), ExternalError> {
-        // Intentionally a no-op, as the web does not (properly) support grabbing the cursor
-        Ok(())
+        Err(ExternalError::NotSupported(NotSupportedError::new()))
     }
 
     #[inline]

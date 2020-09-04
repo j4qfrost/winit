@@ -24,7 +24,8 @@ use crate::platform_impl::platform::{
         CFRunLoopActivity, CFRunLoopAddObserver, CFRunLoopAddSource, CFRunLoopGetMain,
         CFRunLoopObserverCreate, CFRunLoopObserverRef, CFRunLoopSourceContext,
         CFRunLoopSourceCreate, CFRunLoopSourceInvalidate, CFRunLoopSourceRef,
-        CFRunLoopSourceSignal, CFRunLoopWakeUp, NSString, UIApplicationMain, UIUserInterfaceIdiom,
+        CFRunLoopSourceSignal, CFRunLoopWakeUp, NSStringRust, UIApplicationMain,
+        UIUserInterfaceIdiom,
     },
     monitor, view, MonitorHandle,
 };
@@ -47,6 +48,18 @@ pub enum EventProxy {
 pub struct EventLoopWindowTarget<T: 'static> {
     receiver: Receiver<T>,
     sender_to_clone: Sender<T>,
+}
+
+impl<T: 'static> EventLoopWindowTarget<T> {
+    pub fn available_monitors(&self) -> VecDeque<MonitorHandle> {
+        // guaranteed to be on main thread
+        unsafe { monitor::uiscreens() }
+    }
+
+    pub fn primary_monitor(&self) -> MonitorHandle {
+        // guaranteed to be on main thread
+        unsafe { monitor::main_uiscreen() }
+    }
 }
 
 pub struct EventLoop<T: 'static> {
@@ -105,7 +118,7 @@ impl<T: 'static> EventLoop<T> {
                 0,
                 ptr::null(),
                 nil,
-                NSString::alloc(nil).init_str("AppDelegate"),
+                NSStringRust::alloc(nil).init_str("AppDelegate"),
             );
             unreachable!()
         }
@@ -113,16 +126,6 @@ impl<T: 'static> EventLoop<T> {
 
     pub fn create_proxy(&self) -> EventLoopProxy<T> {
         EventLoopProxy::new(self.window_target.p.sender_to_clone.clone())
-    }
-
-    pub fn available_monitors(&self) -> VecDeque<MonitorHandle> {
-        // guaranteed to be on main thread
-        unsafe { monitor::uiscreens() }
-    }
-
-    pub fn primary_monitor(&self) -> MonitorHandle {
-        // guaranteed to be on main thread
-        unsafe { monitor::main_uiscreen() }
     }
 
     pub fn window_target(&self) -> &RootEventLoopWindowTarget<T> {

@@ -34,6 +34,18 @@ impl<T> Default for EventLoopWindowTarget<T> {
     }
 }
 
+impl<T: 'static> EventLoopWindowTarget<T> {
+    #[inline]
+    pub fn available_monitors(&self) -> VecDeque<MonitorHandle> {
+        monitor::available_monitors()
+    }
+
+    #[inline]
+    pub fn primary_monitor(&self) -> MonitorHandle {
+        monitor::primary_monitor()
+    }
+}
+
 pub struct EventLoop<T: 'static> {
     window_target: Rc<RootWindowTarget<T>>,
     _delegate: IdRef,
@@ -66,16 +78,6 @@ impl<T> EventLoop<T> {
             }),
             _delegate: delegate,
         }
-    }
-
-    #[inline]
-    pub fn available_monitors(&self) -> VecDeque<MonitorHandle> {
-        monitor::available_monitors()
-    }
-
-    #[inline]
-    pub fn primary_monitor(&self) -> MonitorHandle {
-        monitor::primary_monitor()
     }
 
     pub fn window_target(&self) -> &RootWindowTarget<T> {
@@ -116,6 +118,14 @@ pub struct Proxy<T> {
 }
 
 unsafe impl<T: Send> Send for Proxy<T> {}
+
+impl<T> Drop for Proxy<T> {
+    fn drop(&mut self) {
+        unsafe {
+            CFRelease(self.source as _);
+        }
+    }
+}
 
 impl<T> Clone for Proxy<T> {
     fn clone(&self) -> Self {
