@@ -378,6 +378,7 @@ impl Clone for WindowEvent<'static> {
             },
 
             ModifiersChanged(modifiers) => ModifiersChanged(modifiers.clone()),
+
             #[allow(deprecated)]
             CursorMoved {
                 device_id,
